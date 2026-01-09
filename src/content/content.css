@@ -1,0 +1,654 @@
+/* FlowReader Reader View Styles */
+
+/* ============================================
+   Overlay Container
+   ============================================ */
+
+#flowreader-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 70%;
+    background: #fafafa;
+    z-index: 2147483640;
+    overflow-y: auto;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    animation: flowreader-slide-in 0.3s ease-out;
+}
+
+@keyframes flowreader-slide-in {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.flowreader-container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 40px 60px 100px;
+}
+
+/* ============================================
+   Header
+   ============================================ */
+
+.flowreader-header {
+    position: relative;
+    margin-bottom: 40px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+/* Close Button - Floating outside container */
+.flowreader-close {
+    position: fixed;
+    top: 50%;
+    left: 70%;
+    transform: translate(-50%, -50%);
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 50%;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 2147483645;
+}
+
+.flowreader-close:hover {
+    background: #f3f4f6;
+    color: #374151;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    transform: translate(-50%, -50%) scale(1.05);
+}
+
+.flowreader-title {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1.3;
+    color: #111827;
+    margin: 0 0 16px 0;
+}
+
+.flowreader-byline,
+.flowreader-site {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 4px 0;
+}
+
+/* ============================================
+   Content
+   ============================================ */
+
+.flowreader-content {
+    font-size: 18px;
+    line-height: 1.8;
+    color: #374151;
+}
+
+.flowreader-content h1,
+.flowreader-content h2,
+.flowreader-content h3,
+.flowreader-content h4,
+.flowreader-content h5,
+.flowreader-content h6 {
+    color: #111827;
+    font-weight: 600;
+    margin: 32px 0 16px;
+    line-height: 1.4;
+}
+
+.flowreader-content h1 {
+    font-size: 28px;
+}
+
+.flowreader-content h2 {
+    font-size: 24px;
+}
+
+.flowreader-content h3 {
+    font-size: 20px;
+}
+
+.flowreader-content h4 {
+    font-size: 18px;
+}
+
+.flowreader-content p {
+    margin: 0 0 20px;
+}
+
+.flowreader-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 24px 0;
+}
+
+.flowreader-content blockquote {
+    margin: 24px 0;
+    padding: 16px 24px;
+    border-left: 4px solid #6366f1;
+    background: #f9fafb;
+    border-radius: 0 8px 8px 0;
+    color: #4b5563;
+    font-style: italic;
+}
+
+.flowreader-content pre {
+    margin: 24px 0;
+    padding: 20px;
+    background: #1f2937;
+    border-radius: 8px;
+    overflow-x: auto;
+    color: #e5e7eb;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.flowreader-content code {
+    background: #f3f4f6;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9em;
+    color: #6366f1;
+}
+
+.flowreader-content pre code {
+    background: none;
+    padding: 0;
+    color: inherit;
+}
+
+.flowreader-content ul,
+.flowreader-content ol {
+    margin: 20px 0;
+    padding-left: 28px;
+}
+
+.flowreader-content li {
+    margin: 8px 0;
+}
+
+.flowreader-content a {
+    color: #6366f1;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s;
+}
+
+.flowreader-content a:hover {
+    border-bottom-color: #6366f1;
+}
+
+.flowreader-content table {
+    width: 100%;
+    margin: 24px 0;
+    border-collapse: collapse;
+}
+
+.flowreader-content th,
+.flowreader-content td {
+    padding: 12px;
+    border: 1px solid #e5e7eb;
+    text-align: left;
+}
+
+.flowreader-content th {
+    background: #f9fafb;
+    font-weight: 600;
+}
+
+.flowreader-content figure {
+    margin: 24px 0;
+}
+
+.flowreader-content figcaption {
+    font-size: 14px;
+    color: #6b7280;
+    text-align: center;
+    margin-top: 8px;
+}
+
+/* ============================================
+   Block Interaction
+   ============================================ */
+
+.flowreader-block {
+    position: relative;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    padding: 8px 12px;
+    margin: -8px -12px;
+    margin-bottom: 20px;
+}
+
+.flowreader-block:hover {
+    background: rgba(99, 102, 241, 0.05);
+    box-shadow: inset 0 0 0 2px rgba(99, 102, 241, 0.15);
+}
+
+.flowreader-block.flowreader-collected {
+    background: rgba(99, 102, 241, 0.12);
+    box-shadow: inset 0 0 0 2px #6366f1;
+}
+
+/* ============================================
+   Fly Animation Element
+   ============================================ */
+
+.flowreader-fly-element {
+    background: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    color: #374151;
+    max-height: 60px;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.flowreader-fly-animate {
+    opacity: 0;
+    transform: scale(0.5) translate(100px, -50px);
+}
+
+/* ============================================
+   Floating Toolbar
+   ============================================ */
+
+.flowreader-toolbar {
+    position: fixed;
+    bottom: 24px;
+    left: 35%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    z-index: 2147483645;
+}
+
+.toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.toolbar-divider {
+    width: 1px;
+    height: 24px;
+    background: #e5e7eb;
+    margin: 0 4px;
+}
+
+.toolbar-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.toolbar-btn:hover {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.toolbar-btn.active {
+    background: #6366f1;
+    color: white;
+}
+
+.toolbar-btn.theme-btn.active {
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+/* Help Popover */
+.toolbar-help-wrapper {
+    position: relative;
+}
+
+.toolbar-popover {
+    position: absolute;
+    bottom: 50px;
+    right: -10px;
+    width: 220px;
+    padding: 16px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all 0.2s ease;
+    pointer-events: none;
+}
+
+.toolbar-help-wrapper:hover .toolbar-popover {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.popover-content p {
+    margin: 0 0 8px;
+    font-size: 13px;
+    color: #374151;
+    line-height: 1.5;
+}
+
+.popover-content p:last-child {
+    margin-bottom: 0;
+}
+
+.popover-content strong {
+    color: #111827;
+}
+
+.popover-content kbd {
+    display: inline-block;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-family: inherit;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    color: #6b7280;
+}
+
+/* ============================================
+   Theme: Minimal (Default)
+   ============================================ */
+
+#flowreader-overlay.theme-minimal {
+    background: #fafafa;
+}
+
+/* ============================================
+   Theme: Sepia (Vintage Brown)
+   ============================================ */
+
+#flowreader-overlay.theme-sepia {
+    background: #faf6f1;
+}
+
+#flowreader-overlay.theme-sepia .flowreader-container {
+    color: #5c4b37;
+}
+
+#flowreader-overlay.theme-sepia .flowreader-title {
+    color: #3d2e1f;
+}
+
+#flowreader-overlay.theme-sepia .flowreader-byline,
+#flowreader-overlay.theme-sepia .flowreader-site {
+    color: #8b7355;
+}
+
+#flowreader-overlay.theme-sepia .flowreader-header {
+    border-bottom-color: #e6ddd3;
+}
+
+#flowreader-overlay.theme-sepia .flowreader-content {
+    color: #5c4b37;
+}
+
+#flowreader-overlay.theme-sepia .flowreader-content h1,
+#flowreader-overlay.theme-sepia .flowreader-content h2,
+#flowreader-overlay.theme-sepia .flowreader-content h3,
+#flowreader-overlay.theme-sepia .flowreader-content h4,
+#flowreader-overlay.theme-sepia .flowreader-content h5,
+#flowreader-overlay.theme-sepia .flowreader-content h6 {
+    color: #3d2e1f;
+}
+
+#flowreader-overlay.theme-sepia .flowreader-content a {
+    color: #b8860b;
+}
+
+#flowreader-overlay.theme-sepia .flowreader-content blockquote {
+    background: #f5efe8;
+    border-left-color: #d4a574;
+}
+
+#flowreader-overlay.theme-sepia .flowreader-content code {
+    background: #f0e6d9;
+    color: #8b4513;
+}
+
+#flowreader-overlay.theme-sepia .flowreader-block:hover {
+    background: rgba(212, 165, 116, 0.1);
+    box-shadow: inset 0 0 0 2px rgba(212, 165, 116, 0.3);
+}
+
+#flowreader-overlay.theme-sepia .flowreader-block.flowreader-collected {
+    background: rgba(212, 165, 116, 0.15);
+    box-shadow: inset 0 0 0 2px #d4a574;
+}
+
+/* ============================================
+   Theme: Forest (Calming Green)
+   ============================================ */
+
+#flowreader-overlay.theme-forest {
+    background: #f0fdf4;
+}
+
+#flowreader-overlay.theme-forest .flowreader-container {
+    color: #1f4d3a;
+}
+
+#flowreader-overlay.theme-forest .flowreader-title {
+    color: #14532d;
+}
+
+#flowreader-overlay.theme-forest .flowreader-byline,
+#flowreader-overlay.theme-forest .flowreader-site {
+    color: #4ade80;
+}
+
+#flowreader-overlay.theme-forest .flowreader-header {
+    border-bottom-color: #bbf7d0;
+}
+
+#flowreader-overlay.theme-forest .flowreader-content {
+    color: #1f4d3a;
+}
+
+#flowreader-overlay.theme-forest .flowreader-content h1,
+#flowreader-overlay.theme-forest .flowreader-content h2,
+#flowreader-overlay.theme-forest .flowreader-content h3,
+#flowreader-overlay.theme-forest .flowreader-content h4,
+#flowreader-overlay.theme-forest .flowreader-content h5,
+#flowreader-overlay.theme-forest .flowreader-content h6 {
+    color: #14532d;
+}
+
+#flowreader-overlay.theme-forest .flowreader-content a {
+    color: #22c55e;
+}
+
+#flowreader-overlay.theme-forest .flowreader-content blockquote {
+    background: #dcfce7;
+    border-left-color: #22c55e;
+}
+
+#flowreader-overlay.theme-forest .flowreader-content code {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+#flowreader-overlay.theme-forest .flowreader-block:hover {
+    background: rgba(34, 197, 94, 0.08);
+    box-shadow: inset 0 0 0 2px rgba(34, 197, 94, 0.2);
+}
+
+#flowreader-overlay.theme-forest .flowreader-block.flowreader-collected {
+    background: rgba(34, 197, 94, 0.12);
+    box-shadow: inset 0 0 0 2px #22c55e;
+}
+
+/* ============================================
+   Dark Mode (Class-based toggle)
+   ============================================ */
+
+#flowreader-overlay.dark-mode {
+    background: #1a1a1a !important;
+}
+
+#flowreader-overlay.dark-mode .flowreader-container {
+    color: #e5e7eb;
+}
+
+#flowreader-overlay.dark-mode .flowreader-header {
+    border-bottom-color: #374151;
+}
+
+#flowreader-overlay.dark-mode .flowreader-title {
+    color: #f9fafb;
+}
+
+#flowreader-overlay.dark-mode .flowreader-byline,
+#flowreader-overlay.dark-mode .flowreader-site {
+    color: #9ca3af;
+}
+
+#flowreader-overlay.dark-mode .flowreader-close {
+    background: #262626;
+    border-color: #374151;
+    color: #9ca3af;
+}
+
+#flowreader-overlay.dark-mode .flowreader-close:hover {
+    background: #374151;
+    color: #f3f4f6;
+}
+
+#flowreader-overlay.dark-mode .flowreader-content {
+    color: #d1d5db;
+}
+
+#flowreader-overlay.dark-mode .flowreader-content h1,
+#flowreader-overlay.dark-mode .flowreader-content h2,
+#flowreader-overlay.dark-mode .flowreader-content h3,
+#flowreader-overlay.dark-mode .flowreader-content h4,
+#flowreader-overlay.dark-mode .flowreader-content h5,
+#flowreader-overlay.dark-mode .flowreader-content h6 {
+    color: #f9fafb;
+}
+
+#flowreader-overlay.dark-mode .flowreader-content a {
+    color: #818cf8;
+}
+
+#flowreader-overlay.dark-mode .flowreader-content blockquote {
+    background: #262626;
+    border-left-color: #818cf8;
+    color: #9ca3af;
+}
+
+#flowreader-overlay.dark-mode .flowreader-content code {
+    background: #374151;
+    color: #818cf8;
+}
+
+#flowreader-overlay.dark-mode .flowreader-content pre {
+    background: #0f0f0f;
+}
+
+#flowreader-overlay.dark-mode .flowreader-content th,
+#flowreader-overlay.dark-mode .flowreader-content td {
+    border-color: #374151;
+}
+
+#flowreader-overlay.dark-mode .flowreader-content th {
+    background: #262626;
+}
+
+#flowreader-overlay.dark-mode .flowreader-block:hover {
+    background: rgba(129, 140, 248, 0.1);
+    box-shadow: inset 0 0 0 2px rgba(129, 140, 248, 0.2);
+}
+
+#flowreader-overlay.dark-mode .flowreader-block.flowreader-collected {
+    background: rgba(129, 140, 248, 0.15);
+    box-shadow: inset 0 0 0 2px #818cf8;
+}
+
+#flowreader-overlay.dark-mode .flowreader-toolbar {
+    background: #262626;
+    border-color: #374151;
+}
+
+#flowreader-overlay.dark-mode .toolbar-divider {
+    background: #374151;
+}
+
+#flowreader-overlay.dark-mode .toolbar-btn {
+    color: #9ca3af;
+}
+
+#flowreader-overlay.dark-mode .toolbar-btn:hover {
+    background: #374151;
+    color: #f3f4f6;
+}
+
+#flowreader-overlay.dark-mode .toolbar-btn.active {
+    background: #6366f1;
+    color: white;
+}
+
+#flowreader-overlay.dark-mode .toolbar-popover {
+    background: #262626;
+    border-color: #374151;
+}
+
+#flowreader-overlay.dark-mode .popover-content p {
+    color: #d1d5db;
+}
+
+#flowreader-overlay.dark-mode .popover-content strong {
+    color: #f9fafb;
+}
+
+#flowreader-overlay.dark-mode .popover-content kbd {
+    background: #374151;
+    border-color: #4b5563;
+    color: #9ca3af;
+}
+
+#flowreader-overlay.dark-mode .flowreader-fly-element {
+    background: #262626;
+    color: #e5e7eb;
+}
