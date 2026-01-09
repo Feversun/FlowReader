@@ -52,8 +52,14 @@ function renderList() {
     reversed.forEach(item => {
         const el = document.createElement('div');
         el.className = 'collection-item';
+
+        // 优先使用 HTML 内容，否则回退到纯文本
+        const displayContent = item.html
+            ? sanitizeHtml(item.html)
+            : escapeHtml(item.content);
+
         el.innerHTML = `
-            <div class="item-content ${item.type}">${escapeHtml(item.content)}</div>
+            <div class="item-content ${item.type}">${displayContent}</div>
             <div class="item-meta">
                 <div class="item-source" title="${escapeHtml(item.source.title)}">
                     ${item.source.favicon ? `<img src="${item.source.favicon}" class="favicon" onerror="this.style.display='none'">` : ''}
@@ -149,6 +155,39 @@ function escapeHtml(text: string) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// 净化 HTML，移除危险元素和属性
+function sanitizeHtml(html: string): string {
+    const template = document.createElement('template');
+    template.innerHTML = html;
+
+    const content = template.content;
+
+    // 移除危险元素
+    const dangerousTags = ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button'];
+    dangerousTags.forEach(tag => {
+        content.querySelectorAll(tag).forEach(el => el.remove());
+    });
+
+    // 移除所有事件处理器属性和 javascript: 链接
+    content.querySelectorAll('*').forEach(el => {
+        // 移除事件处理器
+        Array.from(el.attributes).forEach(attr => {
+            if (attr.name.startsWith('on') ||
+                (attr.name === 'href' && attr.value.toLowerCase().startsWith('javascript:'))) {
+                el.removeAttribute(attr.name);
+            }
+        });
+    });
+
+    // 让链接在新标签中打开
+    content.querySelectorAll('a').forEach(a => {
+        a.setAttribute('target', '_blank');
+        a.setAttribute('rel', 'noopener noreferrer');
+    });
+
+    return template.innerHTML;
 }
 
 init();

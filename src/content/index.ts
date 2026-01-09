@@ -25,7 +25,9 @@ declare global {
   // ============================================
 
   let isReaderActive = false;
+  let isMinimized = false;
   let readerOverlay: HTMLElement | null = null;
+  let minimizedBtn: HTMLElement | null = null;
   let collectedBlocks = new Set(); // 已收集的块 ID
 
   // ============================================
@@ -58,10 +60,62 @@ declare global {
       readerOverlay.remove();
       readerOverlay = null;
     }
+    if (minimizedBtn) {
+      minimizedBtn.remove();
+      minimizedBtn = null;
+    }
 
     document.body.style.overflow = '';
     isReaderActive = false;
+    isMinimized = false;
     chrome.runtime.sendMessage({ type: 'DEACTIVATE_READER' });
+  }
+
+  function minimizeReader() {
+    if (!isReaderActive || isMinimized) return;
+
+    isMinimized = true;
+
+    // 隐藏阅读视图
+    if (readerOverlay) {
+      readerOverlay.style.display = 'none';
+    }
+    document.body.style.overflow = '';
+
+    // 创建最小化悬浮按钮
+    if (!minimizedBtn) {
+      minimizedBtn = document.createElement('div');
+      minimizedBtn.id = 'flowreader-minimized-btn';
+      minimizedBtn.innerHTML = `
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="2"/>
+          <path d="M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M12 8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span class="minimized-label">FlowReader</span>
+      `;
+      minimizedBtn.title = '展开阅读模式';
+      minimizedBtn.addEventListener('click', maximizeReader);
+      document.body.appendChild(minimizedBtn);
+    }
+    minimizedBtn.style.display = 'flex';
+  }
+
+  function maximizeReader() {
+    if (!isReaderActive || !isMinimized) return;
+
+    isMinimized = false;
+
+    // 显示阅读视图
+    if (readerOverlay) {
+      readerOverlay.style.display = '';
+    }
+    document.body.style.overflow = 'hidden';
+
+    // 隐藏最小化按钮
+    if (minimizedBtn) {
+      minimizedBtn.style.display = 'none';
+    }
   }
 
   function toggleReader() {
@@ -83,7 +137,7 @@ declare global {
     readerOverlay.innerHTML = `
       <div class="flowreader-container">
         <header class="flowreader-header">
-          <button class="flowreader-close" title="关闭阅读模式">
+          <button class="flowreader-close" title="最小化">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             </svg>
@@ -149,7 +203,7 @@ declare global {
                 <p><strong>💡 使用提示</strong></p>
                 <p>点击任意段落即可收集到右侧面板</p>
                 <p>再次点击可取消收集</p>
-                <p>按 <kbd>Esc</kbd> 关闭阅读模式</p>
+                <p>按 <kbd>Esc</kbd> 彻底关闭阅读模式</p>
               </div>
             </div>
           </div>
@@ -177,7 +231,7 @@ declare global {
     readerOverlay.innerHTML = `
       <div class="flowreader-container flowreader-simple">
         <header class="flowreader-header">
-          <button class="flowreader-close" title="关闭阅读模式">
+          <button class="flowreader-close" title="最小化">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             </svg>
@@ -234,7 +288,7 @@ declare global {
                 <p><strong>💡 使用提示</strong></p>
                 <p>点击任意段落即可收集到右侧面板</p>
                 <p>再次点击可取消收集</p>
-                <p>按 <kbd>Esc</kbd> 关闭阅读模式</p>
+                <p>按 <kbd>Esc</kbd> 彻底关闭阅读模式</p>
               </div>
             </div>
           </div>
@@ -267,6 +321,19 @@ declare global {
       // 跳过嵌套在其他块内的元素
       if (el.closest('li') && el.tagName !== 'UL' && el.tagName !== 'OL') return;
       if (el.closest('blockquote') && el.tagName !== 'BLOCKQUOTE') return;
+
+      // 跳过空内容元素
+      const textContent = el.textContent?.trim() || '';
+      const isImage = el.tagName === 'IMG' || el.querySelector('img');
+
+      // 如果既没有文本内容，也不是图片，则跳过
+      if (!textContent && !isImage) return;
+
+      // 如果是段落但只有空白或非常短的内容（可能是装饰性元素），跳过
+      if (el.tagName === 'P' && textContent.length < 3 && !isImage) return;
+
+      // 如果父元素是 figure 且当前是 img，跳过（让 figure 作为块）
+      if (el.tagName === 'IMG' && el.closest('figure')) return;
 
       const id = `flowreader-block-${blockId++}`;
       el.setAttribute('data-flowreader-block', id);
@@ -335,18 +402,36 @@ declare global {
   let isDarkMode = false;
   // let currentTheme = 'minimal';
 
+  // 智能交互状态变量
+  let isMousePressed = false;
+  let isSelecting = false;
+  let startX = 0;
+  let startY = 0;
+  let currentBlock: HTMLElement | null = null;
+  const DRAG_THRESHOLD = 4; // 4像素阈值，防止手抖误判
+
   function bindReaderEvents() {
     if (!readerOverlay) return;
 
-    // 关闭按钮
+    // 最小化按钮（原关闭按钮）
     const closeBtn = readerOverlay.querySelector('.flowreader-close');
-    closeBtn?.addEventListener('click', deactivateReader);
+    closeBtn?.addEventListener('click', minimizeReader);
 
     // ESC 键关闭
     document.addEventListener('keydown', handleKeydown);
 
-    // 块点击收集
-    readerOverlay.addEventListener('click', handleBlockClick);
+    // 智能块交互（替代简单的 click 事件）
+    readerOverlay.addEventListener('mousedown', handleBlockMouseDown);
+    readerOverlay.addEventListener('mousemove', handleBlockMouseMove);
+    readerOverlay.addEventListener('mouseup', handleBlockMouseUp);
+    readerOverlay.addEventListener('mouseleave', handleBlockMouseLeave);
+
+    // 链接 hover 时取消 block 高亮
+    readerOverlay.addEventListener('mouseover', handleLinkHover);
+    readerOverlay.addEventListener('mouseout', handleLinkHoverOut);
+
+    // 图片放大按钮事件
+    bindImageZoomEvents();
 
     // 工具栏事件
     bindToolbarEvents();
@@ -411,23 +496,142 @@ declare global {
     }
   }
 
-  function handleBlockClick(e: Event) {
+  // ============================================
+  // 智能块交互 - 3像素阈值法
+  // ============================================
+
+  // 检测链接是否主要是图片（而不是文字链接）
+  function isImageLink(link: HTMLElement): boolean {
+    // 检查链接内是否有图片
+    const img = link.querySelector('img');
+    if (!img) return false;
+
+    // 检查文本内容是否很少（主要是图片）
+    const textContent = link.textContent?.trim() || '';
+    // 如果没有文本，或者文本只是图片的 alt 属性，认为是图片链接
+    const imgAlt = img.alt || '';
+    return textContent.length === 0 || textContent === imgAlt || textContent.length < 5;
+  }
+
+  function handleBlockMouseDown(e: MouseEvent) {
     const target = e.target as HTMLElement;
-    const block = target.closest('.flowreader-block');
+
+    // 如果点击的是工具栏、关闭按钮或放大按钮，不处理
+    if (target.closest('.flowreader-toolbar') || target.closest('.flowreader-close') || target.closest('.flowreader-zoom-btn')) {
+      return;
+    }
+
+    // 检查是否点击了链接
+    const link = target.closest('a');
+    if (link) {
+      // 如果是图片链接，阻止默认行为，作为 block 处理
+      if (isImageLink(link)) {
+        e.preventDefault();
+        e.stopPropagation();
+        // 继续处理为 block
+      } else {
+        // 普通文字链接，交给浏览器处理
+        return;
+      }
+    }
+
+    const block = target.closest('.flowreader-block') as HTMLElement;
     if (!block) return;
 
-    e.preventDefault();
-    e.stopPropagation();
+    // 记录起始位置
+    isMousePressed = true;
+    isSelecting = false;
+    startX = e.clientX;
+    startY = e.clientY;
+    currentBlock = block;
+  }
 
-    const blockId = block.getAttribute('data-flowreader-block');
-    if (!blockId) return;
+  function handleBlockMouseMove(e: MouseEvent) {
+    if (!isMousePressed || !currentBlock) return;
 
-    if (collectedBlocks.has(blockId)) {
-      // 取消收集
-      uncollectBlock(block as HTMLElement, blockId);
+    // 已经是选择模式，不重复计算
+    if (isSelecting) return;
+
+    // 计算移动距离（勾股定理）
+    const moveX = Math.abs(e.clientX - startX);
+    const moveY = Math.abs(e.clientY - startY);
+    const distance = Math.sqrt(moveX * moveX + moveY * moveY);
+
+    // 超过阈值，判定为拖拽选词
+    if (distance > DRAG_THRESHOLD) {
+      isSelecting = true;
+      // 移除 block 高亮，进入选词模式
+      currentBlock.classList.add('flowreader-selecting');
+    }
+  }
+
+  function handleBlockMouseUp(e: MouseEvent) {
+    if (!isMousePressed) return;
+
+    const target = e.target as HTMLElement;
+    const block = currentBlock;
+
+    // 重置状态
+    isMousePressed = false;
+
+    if (isSelecting) {
+      // Case A: 刚才在选词，不触发收集
+      // 延迟移除选择模式类，防止视觉跳变
+      setTimeout(() => {
+        if (currentBlock) {
+          currentBlock.classList.remove('flowreader-selecting');
+        }
+        isSelecting = false;
+        currentBlock = null;
+      }, 100);
     } else {
-      // 收集
-      collectBlock(block as HTMLElement, blockId);
+      // Case B: 点击操作（且不是链接）
+      if (block && !target.closest('a')) {
+        const blockId = block.getAttribute('data-flowreader-block');
+        if (blockId) {
+          if (collectedBlocks.has(blockId)) {
+            uncollectBlock(block, blockId);
+          } else {
+            collectBlock(block, blockId);
+          }
+        }
+      }
+      currentBlock = null;
+    }
+  }
+
+  function handleBlockMouseLeave(_e: MouseEvent) {
+    // 鼠标离开时重置状态，防止状态残留
+    if (isMousePressed) {
+      isMousePressed = false;
+      if (currentBlock) {
+        currentBlock.classList.remove('flowreader-selecting');
+      }
+      isSelecting = false;
+      currentBlock = null;
+    }
+  }
+
+  function handleLinkHover(e: MouseEvent) {
+    const target = e.target as HTMLElement;
+    const link = target.closest('a');
+    if (!link) return;
+
+    // 当 hover 到链接时，给父级 block 添加类名以取消高亮
+    const block = link.closest('.flowreader-block');
+    if (block) {
+      block.classList.add('flowreader-link-hover');
+    }
+  }
+
+  function handleLinkHoverOut(e: MouseEvent) {
+    const target = e.target as HTMLElement;
+    const link = target.closest('a');
+    if (!link) return;
+
+    const block = link.closest('.flowreader-block');
+    if (block) {
+      block.classList.remove('flowreader-link-hover');
     }
   }
 
@@ -444,9 +648,21 @@ declare global {
     addFlyAnimation(block);
 
     // 获取内容
-    const content = block.innerText || block.textContent || '';
-    const html = block.innerHTML;
     const contentType = getContentType(block);
+    let content = block.innerText || block.textContent || '';
+    let html = block.innerHTML;
+
+    // 图片特殊处理
+    if (contentType === 'image') {
+      const img = block.tagName === 'IMG' ? block as HTMLImageElement : block.querySelector('img');
+      if (img) {
+        content = img.alt || img.title || '图片';
+        // 确保 html 包含完整的 img 标签
+        if (block.tagName === 'IMG') {
+          html = block.outerHTML;
+        }
+      }
+    }
 
     // 发送到 background
     chrome.runtime.sendMessage({
@@ -483,7 +699,16 @@ declare global {
     const rect = block.getBoundingClientRect();
     const flyElement = document.createElement('div');
     flyElement.className = 'flowreader-fly-element';
-    flyElement.textContent = (block.innerText || '').substring(0, 50) + '...';
+
+    // 检测是否是图片
+    const isImage = block.tagName === 'IMG' || block.querySelector('img');
+    if (isImage) {
+      const img = block.tagName === 'IMG' ? block as HTMLImageElement : block.querySelector('img')!;
+      flyElement.innerHTML = `<img src="${img.src}" style="max-width: 100%; max-height: 60px; border-radius: 4px;" />`;
+    } else {
+      flyElement.textContent = (block.innerText || '').substring(0, 50) + '...';
+    }
+
     flyElement.style.cssText = `
       position: fixed;
       top: ${rect.top}px;
@@ -561,6 +786,140 @@ declare global {
     }
     return true;
   });
+
+  // ============================================
+  // 图片放大功能 - Lightbox
+  // ============================================
+
+  let currentZoomBtn: HTMLElement | null = null;
+  let currentZoomBlock: HTMLElement | null = null;
+  let lightboxOverlay: HTMLElement | null = null;
+
+  function createZoomButton(): HTMLElement {
+    const btn = document.createElement('button');
+    btn.className = 'flowreader-zoom-btn';
+    btn.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+        <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M11 8v6M8 11h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    `;
+    btn.title = '放大查看';
+    return btn;
+  }
+
+  function showZoomButton(block: HTMLElement, img: HTMLImageElement) {
+    hideZoomButton(); // 先隐藏之前的
+
+    const btn = createZoomButton();
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openLightbox(img.src, img.alt);
+    });
+
+    // 将按钮添加到 block 内
+    block.style.position = 'relative';
+    block.appendChild(btn);
+    currentZoomBtn = btn;
+    currentZoomBlock = block;
+  }
+
+  function hideZoomButton() {
+    if (currentZoomBtn) {
+      currentZoomBtn.remove();
+      currentZoomBtn = null;
+      currentZoomBlock = null;
+    }
+  }
+
+  function openLightbox(src: string, alt: string = '') {
+    // 创建 lightbox overlay
+    lightboxOverlay = document.createElement('div');
+    lightboxOverlay.className = 'flowreader-lightbox';
+    lightboxOverlay.innerHTML = `
+      <div class="lightbox-backdrop"></div>
+      <div class="lightbox-content">
+        <img src="${src}" alt="${alt}" />
+        <div class="lightbox-caption">${alt || ''}</div>
+      </div>
+      <button class="lightbox-close" title="关闭">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    `;
+
+    // 关闭事件
+    const closeBtn = lightboxOverlay.querySelector('.lightbox-close');
+    const backdrop = lightboxOverlay.querySelector('.lightbox-backdrop');
+
+    closeBtn?.addEventListener('click', closeLightbox);
+    backdrop?.addEventListener('click', closeLightbox);
+
+    // ESC 关闭
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeLightbox();
+        document.removeEventListener('keydown', handleEsc);
+      }
+    };
+    document.addEventListener('keydown', handleEsc);
+
+    document.body.appendChild(lightboxOverlay);
+
+    // 动画效果
+    requestAnimationFrame(() => {
+      lightboxOverlay?.classList.add('lightbox-visible');
+    });
+  }
+
+  function closeLightbox() {
+    if (lightboxOverlay) {
+      lightboxOverlay.classList.remove('lightbox-visible');
+      setTimeout(() => {
+        lightboxOverlay?.remove();
+        lightboxOverlay = null;
+      }, 200);
+    }
+  }
+
+  // 监听图片 block 的 hover - 不再使用动态添加按钮，改为使用事件委托
+  function handleImageBlockHover(e: MouseEvent) {
+    const target = e.target as HTMLElement;
+
+    // 如果是放大按钮本身，不处理
+    if (target.closest('.flowreader-zoom-btn')) return;
+
+    // 检查是否是图片或包含图片的元素
+    const block = target.closest('.flowreader-block') as HTMLElement;
+    if (!block) {
+      hideZoomButton();
+      return;
+    }
+
+    // 检查是否是图片类型的 block
+    const img = block.tagName === 'IMG'
+      ? block as HTMLImageElement
+      : block.querySelector('img') as HTMLImageElement;
+
+    if (img && currentZoomBlock !== block) {
+      showZoomButton(block, img);
+    }
+  }
+
+  // 使用 mouseover 代替 mouseenter，更可靠
+  function bindImageZoomEvents() {
+    if (!readerOverlay) return;
+
+    readerOverlay.addEventListener('mouseover', handleImageBlockHover);
+
+    // 当鼠标离开整个 overlay 时隐藏按钮
+    readerOverlay.addEventListener('mouseleave', () => {
+      hideZoomButton();
+    });
+  }
 
   console.log('[FlowReader] Content script loaded');
 })();
